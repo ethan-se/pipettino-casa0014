@@ -24,7 +24,7 @@ int lightSelect1 = 5; //"S2" on breakout board
 int lightSelect2 = 6; //"S3" on breakout board
 
 // This pin controls the activation of the 4 white onboard LEDs
-// on the breakout board?
+// on the breakout board
 int whiteLEDs = 7;
 
 // --- Initialise variables to store colour readings later ---
@@ -47,13 +47,19 @@ void setup() {
 
   // --- Activate the white LEDs and leave them on ---
   digitalWrite(whiteLEDs, HIGH);
+
+    // --- Set the scale of the output frequency from sensor ---
+  digitalWrite(outputFreqSelect1, HIGH); 
+  digitalWrite(outputFreqSelect2, LOW);
+  // ^ Frequency scaling configuration:
+  // (1) LOW + (2) LOW = power down
+  // (1) LOW + (2) HIGH = 2% scaling
+  // (1) HIGH + (2) LOW = 20% scaling
+  // (1) HIGH + (2) HIGH = 100% scaling
+  // Higher scaling = higher frequency = higher range of values.
 }
 
 void loop() {
-  // --- Set the output scaling frequency of the pulse from sensor ---
-  digitalWrite(outputFreqSelect1, HIGH); // this combination sets the scaling
-  digitalWrite(outputFreqSelect2, HIGH); // to 100%, for widest range of readings.
-
   // --- Configure photodiodes to read RED light ---
   digitalWrite(lightSelect1, LOW);
   digitalWrite(lightSelect2, LOW);
