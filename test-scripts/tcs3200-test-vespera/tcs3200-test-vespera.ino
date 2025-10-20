@@ -143,7 +143,7 @@ void loop() {
 
   // --- write reading for red light to "red" variable ---
   redFreq = pulseIn(outputFreq, LOW);
-  // --- remap frequency of red light to RGB value readable by Vespera ---
+  // --- remap frequency of light to hex code readable by Vespera ---
   r = map(redFreq, 30, 120, 255, 0); // values 30/120 as max/min colour intensity. Calibrated in CE lab using lego pieces
 
   // --- Configure photodiodes to read GREEN light ---
@@ -152,6 +152,7 @@ void loop() {
 
   // --- write reading for green light to "green" variable ---
   greenFreq = pulseIn(outputFreq, LOW);
+  // --- remap frequency of light to hex code readable by Vespera ---
   g = map(greenFreq, 80, 270, 255, 0); // values 80/270 as max/min colour intensity. Calibrated in CE lab using lego pieces
 
   // --- Configure photodiodes to read BLUE light ---
@@ -160,6 +161,7 @@ void loop() {
 
   // --- write reading for blue light to "blue" variable ---
   blueFreq = pulseIn(outputFreq, LOW);
+  // --- remap frequency of light to hex code readable by Vespera ---
   b = map(blueFreq, 25, 300, 255, 0); // values 25/300 as max/min colour intensity. Calibrated in CE lab using lego pieces
 
   // --- Display readings on serial monitor ---
