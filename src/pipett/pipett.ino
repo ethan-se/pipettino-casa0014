@@ -47,30 +47,31 @@ byte RGBpayload[payload_size];
 
 // --- define pins ---
 
-int button = 0; //initialises pin that the button is connected to
+int button = 6; //initialises pin that the button is connected to
 bool buttonState; //initialises variable for whether button is pressed
 
 // This is the pin that outputs the sensor readings. 
 // The output is a square wave whose frequency varies 
 // based on the colour and light of recorded light.  
-int outputFreq = 2; //"OUT" on breakout board
+int outputFreq = 4; //"OUT" on breakout board
 
 // These pins control the scale of the output frequency of sensor readings.
 // Different cominbations of HIGH and LOW voltages will modify the
 // output frequency as-per the table in the specifications sheet.
-int outputFreqSelect1 = 3; //"S0" on breakout board
-int outputFreqSelect2 = 4; //"S1" on breakout board
+int outputFreqSelect1 = 0; //"S0" on breakout board
+int outputFreqSelect2 = 1; //"S1" on breakout board
 
 // These pins control the four photodiodes (red, green, blue and clear light) 
 // on the sensor. Different combinations of HIGH and LOW voltages 
 // will select particular a photodiode to output a reading, as-per 
 // the spec sheet. This is how individual RGB values are obtained.
-int lightSelect1 = 5; //"S2" on breakout board
-int lightSelect2 = 6; //"S3" on breakout board
+int lightSelect1 = 2; //"S2" on breakout board
+int lightSelect2 = 3; //"S3" on breakout board
 
 // This pin controls the activation of the 4 white onboard LEDs
 // on the breakout board
-int whiteLEDs = 7;
+int whiteLEDs = 5;
+int busyLED = 7; // yellow LED
 
 // --- Initialise variables to store colour readings later ---
 int redFreq, greenFreq, blueFreq; //raw light frequency readings to be remapped to RGB format
@@ -87,6 +88,7 @@ void setup() {
   pinMode(lightSelect1, OUTPUT);
   pinMode(lightSelect2, OUTPUT);
   pinMode(whiteLEDs, OUTPUT);
+  pinMode(busyLED, OUTPUT);
 
   // --- Tell Arduino to recieve data from the sensor's 
   // output frequency pin ---
@@ -98,6 +100,9 @@ void setup() {
   // --- Activate the white LEDs and leave them on ---
   digitalWrite(whiteLEDs, HIGH); //off for now
 
+  // -- initialise state of busyLED --
+  digitalWrite(busyLED, LOW);
+
   // --- Set the scale of the output frequency from sensor ---
   digitalWrite(outputFreqSelect1, HIGH); 
   digitalWrite(outputFreqSelect2, LOW);
@@ -108,6 +113,8 @@ void setup() {
   // (1) HIGH + (2) HIGH = 100% scaling
   // Higher scaling = higher frequency = higher range of values.
 
+  // -- tell user that arduino is busy during inital connection --
+  digitalWrite(busyLED, HIGH);
 
   // print your MAC address:
   byte mac[6];
@@ -126,17 +133,23 @@ void setup() {
   mqttClient.setBufferSize(2000);
   mqttClient.setCallback(callback);
   
+  // -- turn off busyLED upon setup completion --
+  digitalWrite(busyLED, LOW);
   Serial.println("Set-up complete");
 }
  
 void loop() {
   // Reconnect if necessary
   if (!mqttClient.connected()) {
+    digitalWrite(busyLED, HIGH);
     reconnectMQTT();
+    digitalWrite(busyLED, LOW);
   }
   
   if (WiFi.status() != WL_CONNECTED){
+    digitalWrite(busyLED, HIGH);
     startWifi();
+    digitalWrite(busyLED, LOW);
   }
   // keep mqtt alive
   mqttClient.loop();
@@ -144,6 +157,8 @@ void loop() {
   // *** READING COLOUR VALUES FROM SENSOR ***
   buttonState = digitalRead(button);
   if (buttonState == HIGH) {
+    // --- tell user that Arduino is busy by lighting up busyLED ---
+    digitalWrite(busyLED, HIGH);
     // --- Configure photodiodes to read RED light ---
     digitalWrite(lightSelect1, LOW);
     digitalWrite(lightSelect2, LOW);
@@ -184,6 +199,8 @@ void loop() {
       send_RGB_to_pixel(r,g,b,n);
       delay(50);
       }
+    // --- tell user that Arduino is ready for next colour reading ---
+    digitalWrite(busyLED, LOW);
     }
     else {
       //do nothing, restart loop until next button press
