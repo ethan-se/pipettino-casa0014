@@ -4,11 +4,12 @@
 
 // Connect 10k Ohm resistor to ground to prevent short circuiting!
 
-int button = 0;
+int button = 6;
 bool buttonState;
 
 void setup() {
   // put your setup code here, to run once:
+  Serial.begin(9600);
   pinMode(button, INPUT);
 }
 
