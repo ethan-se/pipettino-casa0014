@@ -1,4 +1,3 @@
-
 // Function to handle incoming MQTT messages
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message received on topic: ");
@@ -57,5 +56,19 @@ void reconnectMQTT() {
     }
   }
   LedGreen();
+}
+
+
+void printMacAddress(byte mac[]) {
+  for (int i = 5; i >= 0; i--) {
+    if (mac[i] < 16) {
+      Serial.print("0");
+    }
+    Serial.print(mac[i], HEX);
+    if (i > 0) {
+      Serial.print(":");
+    }
+  }
+  Serial.println();
 }
 
