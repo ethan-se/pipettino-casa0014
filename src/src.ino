@@ -1,27 +1,31 @@
-// Ethan Taylor Oct 2025 - test script for sending 
-// TCS3200 sensor readings to Vespera via MQTT
+// Ethan Taylor (ethan-se) Oct 2025 - Pipettino source code
 
-//outputs values to serial monitor, and to an MQTT broker connected to vespera
+// On button press, sends TCS3200 sensor readings to Vespera via MQTT
 
-// Code for networking via MQTT used from:
-// Duncan Wilson Oct 2025 - v1 - MQTT messager to vespera
-// available at: https://github.com/ucl-casa-ce/casa0014/tree/main/vespera/workshop-sketch/mkr1010_mqtt_simple
+// Code extended and reused from workshop-sketch/mkr1010_mqtt_simple.ino by Duncan Wilson (djdunc), available at: https://github.com/ucl-casa-ce/casa0014/tree/main/vespera/workshop-sketch/mkr1010_mqtt_simple
 
-// works with MKR1010
+// Comments outline what code is:
+// Original ("START/END: Original code"),
+// Extended ("START/END: Extended code from workshop sketch"), where added code is declared with the commented prefix "NEW:",
+// Reused ("START/END: unmodified code from workshop sketch").
 
-// --- import libraries ---
+// For Arduino MKR1010
 
+// --- PROGRAM BEGIN ---
+
+// START: unmodified code from workshop sketch:
+// Import libraries
 #include <SPI.h>
-#include <WiFiNINA.h>
-#include <PubSubClient.h>
-#include "arduino_secrets.h" 
+#include <WiFiNINA.h>           // library to enable WiFi connectivity on MKR1010
+#include <PubSubClient.h>       // library to enable publishing and subscribing to the MQTT server mqtt.cetools.org
+#include "arduino_secrets.h"    // header containing WiFi and MQTT credentials. Make your own and place in the same directory as this .ino file
 #include <utility/wifi_drv.h>   // library to drive to RGB LED on the MKR1010
 
-// --- define connectivity parameters ---
-const char* ssid          = SECRET_SSID;
-const char* password      = SECRET_PASS;
-const char* mqtt_username = SECRET_MQTTUSER;
-const char* mqtt_password = SECRET_MQTTPASS;
+// Define connectivity parameters
+const char* ssid          = SECRET_SSID;      //you must define this in arduino_secrets.h
+const char* password      = SECRET_PASS;      //you must define this in arduino_secrets.h
+const char* mqtt_username = SECRET_MQTTUSER;  //you must define this in arduino_secrets.h
+const char* mqtt_password = SECRET_MQTTPASS;  //you must define this in arduino_secrets.h
 const char* mqtt_server   = "mqtt.cetools.org";
 const int mqtt_port       = 1884;
 
@@ -30,60 +34,59 @@ WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
 // Make sure to update your lightid value below with the one you have been allocated
-String lightId = "24"; // the topic id number or user number being used.
+String lightId = "24"; // String selects topic assigned to Ethan
 
 // Here we define the MQTT topic we will be publishing data to
-String mqtt_topic = "student/CASA0014/luminaire/" + lightId;            
-String clientId = ""; // will set once i have mac address so that it is unique
+String mqtt_topic = "student/CASA0014/luminaire/" + lightId;   //concatenate string to get path to publish topic         
+String clientId = ""; // initialise empty string to be filled upon obtaining mac address
 
 // NeoPixel Configuration - we need to know this to know how to send messages 
 // to vespera 
-const int num_leds = 72;
-const int payload_size = num_leds * 3; // x3 for RGB
+const int num_leds = 72; // this is the total number of lights on vespera
+const int payload_size = num_leds * 3; // 72x3 for RGB - this is the total number of LEDs on Vespera
 
 // Create the byte array to send in MQTT payload this stores all the colours 
 // in memory so that they can be accessed in for example the rainbow function
 byte RGBpayload[payload_size];
+// END: unmodified code from workshop sketch:
 
-// --- define pins ---
+// START: original code:
+// Define pins
+int button = 6;            // This pin is connected to the tactile button
+bool buttonState;          // Initialise variable to record current status of tactile button
+bool lastButtonState;      // Initialise variable for saving what state the tactile button was in during last loop execution
+ 
+// This pin recieves readings from the TCS3200 colour sensor to Arduino:
+int outputFreq = 4;        // Connected to "OUT" on SEN0101 breakout board. 
 
-int button = 6; //declares pin that the tactile button is connected to
-bool buttonState; //initialises variable for current status of tactile button
-bool lastButtonState; //initialise variable for saving what state the tactile button was in during last loop execution
+// These pins control the range of values output by the TCS3200 colour sensor:
+int outputFreqSelect1 = 0; // Connected to "S0" on SEN0101 breakout board
+int outputFreqSelect2 = 1; // Connected to "S1" on SEN0101 breakout board
 
-// This is the pin that outputs the sensor readings. 
-// The output is a square wave whose frequency varies 
-// based on the colour and light of recorded light.  
-int outputFreq = 4; //"OUT" on breakout board
+// These pins control which lightwaves (red, green or blue) are read by the colour sensor at any given time:
+int lightSelect1 = 2;      // Connected to "S2" on SEN0101 breakout board
+int lightSelect2 = 3;      // Connected to "S3" on SEN0101 breakout board
 
-// These pins control the scale of the output frequency of sensor readings.
-// Different cominbations of HIGH and LOW voltages will modify the
-// output frequency as-per the table in the specifications sheet.
-int outputFreqSelect1 = 0; //"S0" on breakout board
-int outputFreqSelect2 = 1; //"S1" on breakout board
+// This pin controls the activation of the 4 white onboard LEDs:
+int whiteLEDs = 5;         // Connected to "LED" on SEN0101 breakout board. Some breakout boards don't have this header and have the white LEDs always on
 
-// These pins control the four photodiodes (red, green, blue and clear light) 
-// on the sensor. Different combinations of HIGH and LOW voltages 
-// will select particular a photodiode to output a reading, as-per 
-// the spec sheet. This is how individual RGB values are obtained.
-int lightSelect1 = 2; //"S2" on breakout board
-int lightSelect2 = 3; //"S3" on breakout board
-
-// This pin controls the activation of the 4 white onboard LEDs
-// on the breakout board
-int whiteLEDs = 5;
+// This pin controls the activation of an external yellow LED wired to Arduino:
 int busyLED = 7; // yellow LED
 
-// --- Initialise variables to store colour readings later ---
-int redFreq, greenFreq, blueFreq; //raw light frequency readings to be remapped to RGB format
-int r, g, b; //RGB values pushed via MQTT
+// Initialise variables to store colour readings later
+int redFreq, greenFreq, blueFreq; // Stores raw light frequency readings from colour sensor
+int r, g, b; // Stores light frequency readings converted to RGB format
+// END: original code
 
+// START: unmodified code from workshop sketch:
 void setup() {
   Serial.begin(115200);
   //while (!Serial); // Wait for serial port to connect (useful for debugging)
   Serial.println("Vespera");
+  // END: unmodified code from workshop sketch
 
-  // --- Tell Arduino to send data to the control pins ---
+  // START: original code
+  // Send data to the control pins
   pinMode(outputFreqSelect1, OUTPUT);
   pinMode(outputFreqSelect2, OUTPUT);
   pinMode(lightSelect1, OUTPUT);
@@ -91,11 +94,10 @@ void setup() {
   pinMode(whiteLEDs, OUTPUT);
   pinMode(busyLED, OUTPUT);
 
-  // --- Tell Arduino to recieve data from the sensor's 
-  // output frequency pin ---
+  // Recieve data from the colour sensor's output pin
   pinMode(outputFreq, INPUT);
 
-  // --- Tell Arduino to listen for button presses ---
+  // Listen for button presses
   pinMode(button, INPUT);
 
   // --- Activate the white LEDs and leave them on ---
@@ -114,8 +116,10 @@ void setup() {
   // (1) HIGH + (2) HIGH = 100% scaling
   // Higher scaling = lower range of values.
 
-  // -- tell user that arduino is busy during inital connection --
-  digitalWrite(busyLED, HIGH);
+  // END: original code
+
+  // START: extended code from workshop sketch:
+  digitalWrite(busyLED, HIGH); // NEW: Indicate that device is busy during inital MQTT connection
 
   // print your MAC address:
   byte mac[6];
@@ -134,60 +138,60 @@ void setup() {
   mqttClient.setBufferSize(2000);
   mqttClient.setCallback(callback);
   
-  // -- turn off busyLED upon setup completion --
-  digitalWrite(busyLED, LOW);
+  digitalWrite(busyLED, LOW); // NEW: Indicate that device ready to recieve user input after MQTT connection is established
   Serial.println("Set-up complete");
 }
  
 void loop() {
   // Reconnect if necessary
   if (!mqttClient.connected()) {
-    digitalWrite(busyLED, HIGH);
+    digitalWrite(busyLED, HIGH); // NEW: Indicate that device is busy during reconnection attempts
     reconnectMQTT();
-    digitalWrite(busyLED, LOW);
+    digitalWrite(busyLED, LOW);  // NEW: Indicate that device is ready for user input
   }
   
   if (WiFi.status() != WL_CONNECTED){
-    digitalWrite(busyLED, HIGH);
+    digitalWrite(busyLED, HIGH); // NEW: Indicate that device is busy during reconnection attempts
     startWifi();
-    digitalWrite(busyLED, LOW);
+    digitalWrite(busyLED, LOW);  // NEW: Indicate that device is ready for user input
   }
   // keep mqtt alive
   mqttClient.loop();
+  // END: modified code from workshop sketch
 
-  // *** READING COLOUR VALUES FROM SENSOR ***
-  buttonState = digitalRead(button);
-  if (buttonState != lastButtonState) {
-    // --- tell user that Arduino is busy by lighting up busyLED ---
-    digitalWrite(busyLED, HIGH);
-    // --- Configure photodiodes to read RED light ---
+  // START: Original code:
+  buttonState = digitalRead(button);      //check button state
+  if (buttonState != lastButtonState) {   //detect if button has been pressed
+    // if button has been pressed...
+
+    // Alert user that device is busy
+    digitalWrite(busyLED, HIGH); 
+
+    // Configure colour sensor to detect the frequency of RED lightwaves
     digitalWrite(lightSelect1, LOW);
     digitalWrite(lightSelect2, LOW);
-
-    // --- write reading for red light to "red" variable ---
+    // Store reading for light frequency
     redFreq = pulseIn(outputFreq, LOW);
-    // --- remap frequency of light to hex code readable by Vespera ---
-    r = map(redFreq, 30, 120, 255, 0); // values 30/120 as max/min colour intensity. Calibrated in CE lab using lego pieces
+    // Remap frequency reading to an RGB value
+    r = map(redFreq, 30, 120, 255, 0); // TO CALIBRATE
 
-    // --- Configure photodiodes to read GREEN light ---
+    // Configure colour sensor to detect the frequency of GREEN lightwaves
     digitalWrite(lightSelect1, HIGH);
     digitalWrite(lightSelect2, HIGH);
-
-    // --- write reading for green light to "green" variable ---
+    // Store reading for light frequency
     greenFreq = pulseIn(outputFreq, LOW);
-    // --- remap frequency of light to hex code readable by Vespera ---
-    g = map(greenFreq, 80, 270, 255, 0); // values 80/270 as max/min colour intensity. Calibrated in CE lab using lego pieces
+    // Remap frequency reading to an RGB value
+    g = map(greenFreq, 80, 270, 255, 0); // TO CALIBRATE
 
-    // --- Configure photodiodes to read BLUE light ---
+    // Configure colour sensor to detect the frequency of BLUE lightwaves
     digitalWrite(lightSelect1, LOW);
     digitalWrite(lightSelect2, HIGH);
-
-    // --- write reading for blue light to "blue" variable ---
+    // Store reading for light frequency
     blueFreq = pulseIn(outputFreq, LOW);
-    // --- remap frequency of light to hex code readable by Vespera ---
-    b = map(blueFreq, 25, 300, 255, 0); // values 25/300 as max/min colour intensity. Calibrated in CE lab using lego pieces
+    // Remap frequency reading to an RGB value
+    b = map(blueFreq, 25, 300, 255, 0); // TO CALIBRATE
 
-    // --- Display readings on serial monitor ---
+    // Display readings on serial monitor
     Serial.print("Red : ");
     Serial.print(r);
     Serial.print(", Green : ");
@@ -195,12 +199,13 @@ void loop() {
     Serial.print(", Blue : ");
     Serial.print(b);
     Serial.println();
-
+    
+    // Match Vespera lights to converted sensor readings, one-by-one, in numerical order
     for(int n=0; n<num_leds; n++){
       send_RGB_to_pixel(r,g,b,n);
       delay(50);
       }
-    // --- tell user that Arduino is ready for next colour reading ---
+    // Indicate that device is ready for user input
     digitalWrite(busyLED, LOW);
     }
     else {
@@ -209,8 +214,11 @@ void loop() {
     //save this loop's button state
     lastButtonState = buttonState;
   }
+//END: Original code
 
+// --- PROGRAM END ---
 
+//START: Unmodified code from workshop sketch:
 // Function to update the R, G, B values of a single LED pixel
 // RGB can a value between 0-254, pixel is 0-71 for a 72 neopixel strip
 void send_RGB_to_pixel(int r, int g, int b, int pixel) {
@@ -278,6 +286,10 @@ void printMacAddress(byte mac[]) {
   }
   Serial.println();
 }
+//END: Unmodified code from workshop sketch:
+
+
+
 
 
 
