@@ -47,8 +47,9 @@ byte RGBpayload[payload_size];
 
 // --- define pins ---
 
-int button = 6; //initialises pin that the button is connected to
-bool buttonState; //initialises variable for whether button is pressed
+int button = 6; //declares pin that the tactile button is connected to
+bool buttonState; //initialises variable for current status of tactile button
+bool lastButtonState; //initialise variable for saving what state the tactile button was in during last loop execution
 
 // This is the pin that outputs the sensor readings. 
 // The output is a square wave whose frequency varies 
@@ -111,7 +112,7 @@ void setup() {
   // (1) LOW + (2) HIGH = 2% scaling
   // (1) HIGH + (2) LOW = 20% scaling
   // (1) HIGH + (2) HIGH = 100% scaling
-  // Higher scaling = higher frequency = higher range of values.
+  // Higher scaling = lower range of values.
 
   // -- tell user that arduino is busy during inital connection --
   digitalWrite(busyLED, HIGH);
@@ -156,7 +157,7 @@ void loop() {
 
   // *** READING COLOUR VALUES FROM SENSOR ***
   buttonState = digitalRead(button);
-  if (buttonState == HIGH) {
+  if (buttonState != lastButtonState) {
     // --- tell user that Arduino is busy by lighting up busyLED ---
     digitalWrite(busyLED, HIGH);
     // --- Configure photodiodes to read RED light ---
@@ -205,6 +206,8 @@ void loop() {
     else {
       //do nothing, restart loop until next button press
     }
+    //save this loop's button state
+    lastButtonState = buttonState;
   }
 
 
