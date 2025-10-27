@@ -75,7 +75,18 @@ int busyLED = 7; // yellow LED
 
 // Initialise variables to store colour readings later
 int redFreq, greenFreq, blueFreq; // Stores raw light frequency readings from colour sensor
-int r, g, b; // Stores light frequency readings converted to RGB format
+int redRemap, blueRemap, greenRemap; // Stores light frequency readings in the process of being converted to RGB format 
+int r, g, b; // Stores light frequency readings converted to RGB format, which are read by Vespera
+
+// Set parameters to calibrate colour sensor readings
+int rHigh = 410;
+int rLow = 85;
+int gHigh = 462;
+int gLow = 130;
+int bHigh = 385;
+int bLow = 100;
+// ^ Calibrated in CE Lab at 6pm, 27th October 2025 using brightly coloured felt
+
 // END: original code
 
 // START: unmodified code from workshop sketch:
@@ -100,15 +111,15 @@ void setup() {
   // Listen for button presses
   pinMode(button, INPUT);
 
-  // --- Activate the white LEDs and leave them on ---
+  // Activate the white LEDs
   digitalWrite(whiteLEDs, HIGH); //off for now
 
-  // -- initialise state of busyLED --
-  digitalWrite(busyLED, LOW);
+  // Indicate that device is busy during startup
+  digitalWrite(busyLED, HIGH); 
 
-  // --- Set the scale of the output frequency from sensor ---
-  digitalWrite(outputFreqSelect1, HIGH); 
-  digitalWrite(outputFreqSelect2, LOW);
+  // Configure the range of readings sent from the colour sensor's output pin
+  digitalWrite(outputFreqSelect1, HIGH); // (1)
+  digitalWrite(outputFreqSelect2, LOW);  // (2)
   // ^ Frequency scaling configuration:
   // (1) LOW + (2) LOW = power down
   // (1) LOW + (2) HIGH = 2% scaling
@@ -118,9 +129,7 @@ void setup() {
 
   // END: original code
 
-  // START: extended code from workshop sketch:
-  digitalWrite(busyLED, HIGH); // NEW: Indicate that device is busy during inital MQTT connection
-
+  // START: Extended code from workshop sketch:
   // print your MAC address:
   byte mac[6];
   WiFi.macAddress(mac);
@@ -173,15 +182,19 @@ void loop() {
     // Store reading for light frequency
     redFreq = pulseIn(outputFreq, LOW);
     // Remap frequency reading to an RGB value
-    r = map(redFreq, 30, 120, 255, 0); // TO CALIBRATE
-
+    redRemap = map(redFreq, rLow, rHigh, 255, 0); // TO CALIBRATE
+    // Constrain RGB value in case of integer overflow
+    r = constrain(redRemap, 0, 255); // Note: because of the way "constrain()" is implemented, I have not used this function within the above line of code. See Arduino documentation: https://docs.arduino.cc/language-reference/en/functions/math/constrain/
+    
     // Configure colour sensor to detect the frequency of GREEN lightwaves
     digitalWrite(lightSelect1, HIGH);
     digitalWrite(lightSelect2, HIGH);
     // Store reading for light frequency
     greenFreq = pulseIn(outputFreq, LOW);
     // Remap frequency reading to an RGB value
-    g = map(greenFreq, 80, 270, 255, 0); // TO CALIBRATE
+    greenRemap = map(greenFreq, gLow, gHigh, 255, 0); // TO CALIBRATE
+    // Constrain RGB value in case of integer overflow
+    g = constrain(greenRemap, 0, 255); // Note: because of the way "constrain()" is implemented, I have not used this function within the above line of code. See Arduino documentation: https://docs.arduino.cc/language-reference/en/functions/math/constrain/
 
     // Configure colour sensor to detect the frequency of BLUE lightwaves
     digitalWrite(lightSelect1, LOW);
@@ -189,16 +202,32 @@ void loop() {
     // Store reading for light frequency
     blueFreq = pulseIn(outputFreq, LOW);
     // Remap frequency reading to an RGB value
-    b = map(blueFreq, 25, 300, 255, 0); // TO CALIBRATE
-
+    blueRemap = map(blueFreq, bLow, bHigh, 255, 0); // TO CALIBRATE
+    // Constrain RGB value in case of integer overflow
+    b = constrain(blueRemap, 0, 255); // Note: because of the way "constrain()" is implemented, I have not used this function within the above line of code. See Arduino documentation: https://docs.arduino.cc/language-reference/en/functions/math/constrain/
+    
     // Display readings on serial monitor
-    Serial.print("Red : ");
+    Serial.println();
+    Serial.print("R : ");
     Serial.print(r);
-    Serial.print(", Green : ");
+    Serial.print(", G : ");
     Serial.print(g);
-    Serial.print(", Blue : ");
+    Serial.print(", B : ");
     Serial.print(b);
     Serial.println();
+    Serial.print("Rm : ");
+    Serial.print(redRemap);
+    Serial.print(", Gm : ");
+    Serial.print(greenRemap);
+    Serial.print(", Bm : ");
+    Serial.print(blueRemap);
+    Serial.println();
+    Serial.print("Rf : ");
+    Serial.print(redFreq);
+    Serial.print(", Gf : ");
+    Serial.print(greenFreq);
+    Serial.print(", Bf : ");
+    Serial.print(blueFreq);
     
     // Match Vespera lights to converted sensor readings, one-by-one, in numerical order
     for(int n=0; n<num_leds; n++){
