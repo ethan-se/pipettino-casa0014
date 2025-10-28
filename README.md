@@ -93,7 +93,7 @@ A better way to implement this would be to change the order of the lights being 
 This prototype is currently powered using a long USB cord connected to mains power supply. A more refined prototype would have a LiPo battery fitted to become truly wireless, improving the user experience.
 
 ## Colour detection: technical details
-The `pulseIn()` function measures the time taken for one pulse to complete, in microseconds, as outlined in the [Arduino documentation](https://docs.arduino.cc/language-reference/en/functions/advanced-io/pulseIn/).
+The `pulseIn()` function is used to obtain initial readings from the colour sensor. This function measures the time taken for one pulse to complete, in microseconds, as outlined in the [Arduino documentation](https://docs.arduino.cc/language-reference/en/functions/advanced-io/pulseIn/).
 
 There is a reciprocal relationship between a wave's frequency and how long it takes for a wave to complete one cycle, as described by the following equation:
 
