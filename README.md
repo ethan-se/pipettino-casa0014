@@ -31,7 +31,7 @@ Pipettino is a remote sensing device connected to the edge of an Internet of Thi
     <img src="./docs/pipettino-arch.webp" alt="Image of Pipettino device" width="500"/>
 </p>
 
-Pipettino can detect the frequency of red, green and blue lightwaves reflected off objects into its "tip" using its colour sensor. When the button is pressed (see below image) the MCU reads this data sent from the colour sensor, processes it on-device ([see here for details](#colour-detection-technical-details)) so that it is readable by Vespera, and publishes this colour data as a MQTT message to a Wi-Fi gateway.
+Pipettino can detect the frequency of red, green and blue lightwaves reflected off objects into its "tip" using its colour sensor. When the button is pressed (see below image) the MCU reads this data sent from the colour sensor, processes it on-device ([see here for details](#colour-detection-technical-details)) so that it is readable by Vespera, and publishes this colour data as a MQTT message via a Wi-Fi gateway.
 
 <p align="center">
     <img src="./docs/pipettino-in-use.jpg" alt="Image of Pipettino device" height="500"/>
