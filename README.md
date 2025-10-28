@@ -97,10 +97,10 @@ The `pulseIn()` function measures the time taken for one pulse to complete, in m
 
 There is a reciprocal relationship between a wave's frequency and how long it takes for a wave to complete one cycle, as described by the following equation:
 
-
 $$
 T = \frac{1}{f}
 $$
+
 Where $T$ is the wave's duration and $f$ is the wave's frequency.
 
 This means when there is a strong presence of a certain colour wavelength reflected into the sensor, the sensor records a low value. Likewise, high values are recorded for a weak presence of colour.
