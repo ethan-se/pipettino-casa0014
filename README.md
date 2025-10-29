@@ -10,15 +10,15 @@ By combining this iconography with the computing power of an Arduino, one may br
 Pipettino is an Arduino MKR1010-powered interface to control an electric light unit, [Vespera](https://github.com/ucl-casa-ce/casa0014/tree/main/vespera), by sending MQTT messages over Wi-Fi. 
 
 This repository contains the following resources on Pipettino:
-- Pipettino's source code, in `/src/`.
-- Test scripts used in the development of Pipettino, in `./test-scripts/`.
-- A list of hardware and software required to make the device, in `BUILD.md`.
-- Instructions on how to reproduce this device yourself, in `BUILD.md`.
-- Photos of concept sketches and in-progress builds of Pipettino, in `./concept/`.
+- Pipettino's source code, in `/src/`
+- Test scripts used in the development of Pipettino, in `./test-scripts/`
+- A list of hardware and software required to make the device, in `BUILD.md`
+- Instructions on how to reproduce this device yourself, in `BUILD.md`
+- Photos of concept sketches and in-progress builds of Pipettino, in `./concept/`
 
 ## How does it work?
 
-Pipettino is a remote sensing device connected to the edge of an Internet of Things network. This device is made of the following components:
+Pipettino is a remote sensing device connected to the edge of an Internet of Things network. This device is made of the following electronic components:
 ### Microcontroller (MCU)
 - Arduino MKR1010
 ### Sensors
@@ -26,10 +26,6 @@ Pipettino is a remote sensing device connected to the edge of an Internet of Thi
 - Tactile switch (used as a button)
 ### Actuator
 - Yellow LED
-
-<p align="center">
-    <img src="./docs/pipettino-arch.webp" alt="Architecture overview of Pipettino device" width="500"/>
-</p>
 
 Pipettino can detect the frequency of red, green and blue lightwaves reflected off objects into its "tip" using its colour sensor. When the button is pressed, the MCU reads the data sent from the colour sensor, processes it on-device ([see here for details](#colour-detection-technical-details)) so that it is readable by Vespera, and publishes it as a MQTT message to a MQTT server via a Wi-Fi gateway.
 
@@ -48,6 +44,16 @@ The Wi-Fi gateway delivers the message to an MQTT server, `mqtt.cetools.org`, in
 Vespera is also subscribed to this topic on the same MQTT server. When Pipettino's message is published, Vespera changes the colour of its light to match the newly-published colour data.
 
 You can also view Vespera's lights change without being physically present, using [this web viewer](https://www.iot.io/projects/lumi/) on topic 24.
+
+### Architecture overview diagram
+<p align="center">
+    <img src="./docs/pipettino-arch.webp" alt="Architecture overview of Pipettino device" width="500"/>
+</p>
+
+### Circuit diagram
+<p align="center">
+    <img src="./docs/circuit-diagram.jpg" alt="Circuit diagram of Pipettino device" width="500"/>
+</p>
 
 ## How can I reproduce this device?
 Please read the instructions outlined in [BUILD.md](https://github.com/ethan-se/pipettino-casa0014/blob/main/BUILD.md), outlining the software and hardware components for this device and how to assemble them.
